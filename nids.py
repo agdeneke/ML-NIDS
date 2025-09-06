@@ -10,5 +10,9 @@ class PacketDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return pd.concat([self.packets.iloc[idx], self.labels.iloc[idx]])
 
+class NeuralNetwork(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")

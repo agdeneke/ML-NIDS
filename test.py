@@ -32,5 +32,12 @@ class PacketDatasetTest(unittest.TestCase):
 
         self.assertEqual(label_result, label)
 
+class NeuralNetworkTest(unittest.TestCase):
+    def setUp(self):
+        model = nids.NeuralNetwork()
+
+    def test_canary(self):
+        self.assertEqual(True, True)
+
 if __name__ == '__main__':
     unittest.main()
