@@ -3,15 +3,13 @@ import nids
 
 class PacketDatasetTest(unittest.TestCase):
     def setUp(self):
-        max_number_of_packets = 100
-        self.packet_dataset = nids.PacketDataset("out.csv", "labels.csv", max_number_of_packets)
+        self.max_number_of_packets = 100
+        self.packet_dataset = nids.PacketDataset("out.csv", "labels.csv", self.max_number_of_packets)
 
     def test_get_number_of_packets(self):
-        max_number_of_packets = 100
-
         number_of_packets_result = len(self.packet_dataset)
 
-        self.assertEqual(number_of_packets_result, max_number_of_packets)
+        self.assertEqual(number_of_packets_result, self.max_number_of_packets)
 
     def test_get_packet_length(self):
         packet_length = 1294
