@@ -15,4 +15,6 @@ class NeuralNetwork(torch.nn.Module):
         super().__init__()
 
     def forward(self, input):
-        return input
+        number_of_output_features = 1
+
+        return torch.zeros(input.shape[0], number_of_output_features)
