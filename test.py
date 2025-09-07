@@ -44,19 +44,12 @@ class NeuralNetworkTest(unittest.TestCase):
     def test_canary(self):
         self.assertEqual(True, True)
 
-    def test_number_of_output_samples(self):
+    def test_output_shape(self):
         output_tensor = self.model(self.input_tensor)
 
-        number_of_samples_result = output_tensor.shape[0]
+        output_tensor_shape = output_tensor.shape
 
-        self.assertEqual(number_of_samples_result, self.number_of_samples)
-
-    def test_number_of_output_features(self):
-        output_tensor = self.model(self.input_tensor)
-
-        number_of_features_result = output_tensor.shape[1]
-
-        self.assertEqual(number_of_features_result, self.number_of_features)
+        self.assertEqual(output_tensor_shape, (self.number_of_samples, self.number_of_features))
 
 if __name__ == '__main__':
     unittest.main()
