@@ -1,5 +1,6 @@
 import unittest
 import nids
+import torch
 
 class PacketDatasetTest(unittest.TestCase):
     def setUp(self):
@@ -34,10 +35,28 @@ class PacketDatasetTest(unittest.TestCase):
 
 class NeuralNetworkTest(unittest.TestCase):
     def setUp(self):
-        model = nids.NeuralNetwork()
+        self.number_of_samples = 128
+        self.number_of_features = 10
+
+        self.model = nids.NeuralNetwork()
+        self.input_tensor = torch.zeros(self.number_of_samples, self.number_of_features)
 
     def test_canary(self):
         self.assertEqual(True, True)
+
+    def test_number_of_output_samples(self):
+        output_tensor = self.model(self.input_tensor)
+
+        number_of_samples_result = output_tensor.shape[0]
+
+        self.assertEqual(number_of_samples_result, self.number_of_samples)
+
+    def test_number_of_output_features(self):
+        output_tensor = self.model(self.input_tensor)
+
+        number_of_features_result = output_tensor.shape[1]
+
+        self.assertEqual(number_of_features_result, self.number_of_features)
 
 if __name__ == '__main__':
     unittest.main()
