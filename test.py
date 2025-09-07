@@ -36,7 +36,7 @@ class PacketDatasetTest(unittest.TestCase):
 class NeuralNetworkTest(unittest.TestCase):
     def setUp(self):
         self.number_of_samples = 128
-        self.number_of_features = 10
+        self.number_of_features = 1
 
         self.model = nids.NeuralNetwork()
         self.input_tensor = torch.zeros(self.number_of_samples, self.number_of_features)
