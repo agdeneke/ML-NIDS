@@ -12,26 +12,12 @@ class PacketDatasetTest(unittest.TestCase):
 
         self.assertEqual(number_of_packets_result, self.max_number_of_packets)
 
-    def test_get_packet_length(self):
-        packet_length = 1294
-
+    def test_get_packet(self):
         packet_length_result = self.packet_dataset[0]["Length"]
-
-        self.assertEqual(packet_length_result, packet_length)
-
-    def test_get_packet_destination(self):
-        destination = "192.168.100.5"
-
         destination_result = self.packet_dataset[0]["Destination"]
-
-        self.assertEqual(destination_result, destination)
-
-    def test_get_packet_label(self):
-        label = 0
-
         label_result = self.packet_dataset[0]["x"]
 
-        self.assertEqual(label_result, label)
+        self.assertEqual((packet_length_result, destination_result, label_result), (1294, "192.168.100.5", 0))
 
 class NeuralNetworkTest(unittest.TestCase):
     def setUp(self):
