@@ -14,7 +14,9 @@ class NeuralNetwork(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, input):
-        number_of_output_features = 1
+        self.linear = torch.nn.Linear(20, 1)
 
-        return torch.zeros(input.shape[0], number_of_output_features)
+    def forward(self, input):
+        output = self.linear(input)
+
+        return output
