@@ -23,7 +23,7 @@ class NeuralNetworkTest(unittest.TestCase):
     def setUp(self):
         self.number_of_samples = 128
         self.number_of_input_features = 20
-        self.number_of_output_features = 1
+        self.number_of_output_values = 2
 
         self.model = nids.NeuralNetwork()
         self.input_tensor = torch.zeros(self.number_of_samples, self.number_of_input_features)
@@ -36,7 +36,7 @@ class NeuralNetworkTest(unittest.TestCase):
 
         output_tensor_shape = output_tensor.shape
 
-        self.assertEqual(output_tensor_shape, (self.number_of_samples, self.number_of_output_features))
+        self.assertEqual(output_tensor_shape, (self.number_of_samples, self.number_of_output_values))
 
 if __name__ == '__main__':
     unittest.main()
