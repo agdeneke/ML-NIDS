@@ -15,6 +15,7 @@ class NeuralNetwork(torch.nn.Module):
         super().__init__()
 
         self.linear = torch.nn.Linear(input_features, output_features)
+        self.double()
 
     def forward(self, input):
         logits = self.linear(input)
