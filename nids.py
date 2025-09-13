@@ -11,10 +11,10 @@ class PacketDataset(torch.utils.data.Dataset):
         return pd.concat([self.packets.iloc[idx], self.labels.iloc[idx]], axis=1)
 
 class NeuralNetwork(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, input_features, output_features):
         super().__init__()
 
-        self.linear = torch.nn.Linear(20, 2)
+        self.linear = torch.nn.Linear(input_features, output_features)
 
     def forward(self, input):
         logits = self.linear(input)
