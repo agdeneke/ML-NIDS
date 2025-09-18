@@ -5,7 +5,7 @@ import torch
 class PacketDatasetTest(unittest.TestCase):
     def setUp(self):
         self.max_number_of_packets = 100
-        self.packet_dataset = nids.PacketDataset("out.csv", "labels.csv", self.max_number_of_packets)
+        self.packet_dataset = nids.PacketDataset("out.csv", "archive/ARP MitM/ARP_MitM_labels.csv", self.max_number_of_packets)
 
     def test_get_number_of_packets(self):
         number_of_packets_result = len(self.packet_dataset)
