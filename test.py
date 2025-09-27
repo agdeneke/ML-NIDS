@@ -1,16 +1,21 @@
 import unittest
+import pandas as pd
 import nids
 import torch
 
 class PacketDatasetTest(unittest.TestCase):
     def setUp(self):
-        self.max_number_of_packets = 100
-        self.packet_dataset = nids.PacketDataset("out.csv", "archive/ARP MitM/ARP_MitM_labels.csv", self.max_number_of_packets)
+        packet = [[1, 0.000000, "192.168.2.15", "192.168.100.5", "TLSv1", 1294, ""]]
+        label = [[1, 0]]
+
+        packet_df = pd.DataFrame(packet, columns=["No.", "Time", "Source", "Destination", "Protocol", "Length", "Info"])
+        label_df = pd.DataFrame(label, columns=["No.", "x"])
+        self.packet_dataset = nids.PacketDataset(packet_df, label_df)
 
     def test_get_number_of_packets(self):
         number_of_packets_result = len(self.packet_dataset)
 
-        self.assertEqual(number_of_packets_result, self.max_number_of_packets)
+        self.assertEqual(number_of_packets_result, 1)
 
     def test_get_packet(self):
         packet_length_column_number = 5
