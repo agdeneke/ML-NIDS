@@ -15,6 +15,9 @@ class NeuralNetwork(torch.nn.Module):
         super().__init__()
 
         self.linear = torch.nn.Linear(input_features, output_features)
+        self.linear_relu_stack = torch.nn.Sequential(torch.nn.Linear(input_features, 20),
+                                                     torch.nn.ReLU(),
+                                                     torch.nn.Linear(20, output_features))
 
     def forward(self, input):
         logits = self.linear(input)
