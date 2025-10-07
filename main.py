@@ -1,6 +1,7 @@
 import pandas as pd
 import nids
 import torch
+import sys
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     model.train()
@@ -39,8 +40,10 @@ def test_loop(dataloader, model, loss_fn):
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
-packet_df = pd.read_csv("out.csv")
-label_df = pd.read_csv("archive/Fuzzing/Fuzzing_labels.csv")
+packet_capture_filename = sys.argv[1]
+labels_filename = sys.argv[2]
+packet_df = pd.read_csv(packet_capture_filename)
+label_df = pd.read_csv(labels_filename)
 
 features_to_drop = ["No.", "Time", "Info"]
 packet_df = packet_df.drop(features_to_drop, axis="columns")
