@@ -20,6 +20,6 @@ class NeuralNetwork(torch.nn.Module):
                                                      torch.nn.Linear(20, output_features))
 
     def forward(self, input):
-        logits = self.linear(input)
+        logits = self.linear_relu_stack(input)
 
         return logits
