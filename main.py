@@ -122,7 +122,7 @@ print(f"Using {device} device")
 model = nids.NeuralNetwork(input_features=3, output_features=2).to(device)
 
 try:
-    model.load_state_dict(torch.load('model_weights.pth', weights_only=True))
+    model.load_state_dict(torch.load('model_weights.pth', weights_only=True, map_location=torch.device(device)))
 except FileNotFoundError:
     print("Model not found.")
 
