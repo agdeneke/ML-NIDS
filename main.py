@@ -44,13 +44,9 @@ def packet_handler(pkt: scapy.packet.Packet):
     source_mac = pkt[Ether].src
     dest_mac = pkt[Ether].dst
 
-    print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
-
     if pkt.haslayer(IP):
         source_ip = pkt[IP].src
         dest_ip = pkt[IP].dst
-
-        print(f"Source IP: {source_ip} Destination IP: {dest_ip} Length: {len(pkt)}")
 
     packet_time = pd.to_datetime(pkt.time, unit="s")
 
@@ -67,8 +63,6 @@ def packet_handler(pkt: scapy.packet.Packet):
     packet_df["arp_request_rate"] = captured_packets_df["arp_request_rate"]
     packet_df["tcp_rate"] = captured_packets_df["tcp_rate"]
 
-    print(packet_df)
-
     X = torch.tensor(packet_df.to_numpy(dtype="float32"), dtype=torch.float32).to(device)
     logits = model(X).to(device)
     softmax_model = torch.nn.Softmax(dim=1)
@@ -76,9 +70,8 @@ def packet_handler(pkt: scapy.packet.Packet):
 
     if is_attack:
         print("Attack detected!")
-    else:
-        print("Normal traffic")
-    print("")
+        print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
+        print(f"Source IP: {source_ip} Destination IP: {dest_ip} Length: {len(pkt)}")
 
 def preprocess(packet_df, label_df):
     packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
