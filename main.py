@@ -13,12 +13,12 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         X = torch.tensor(X, dtype=torch.float32).to(device)
         y = torch.tensor(y).to(device)
 
+        optimizer.zero_grad()
         pred = model(X).to(device)
         loss = loss_fn(pred, y)
 
         loss.backward()
         optimizer.step()
-        optimizer.zero_grad()
 
 def find_arp_request_rate(packet_df):
     source_arp_request_rates = []
@@ -90,6 +90,10 @@ def preprocess(packet_df, label_df):
     packet_df = find_arp_request_rate(packet_df)
     packet_df = find_tcp_rate(packet_df)
     packet_df = packet_df.drop(["Source", "Time"], axis="columns").reset_index(drop=True)
+
+    packet_df = packet_df.fillna(0)
+
+    packet_df["Length"] = (packet_df["Length"] - packet_df["Length"].min()) / (packet_df["Length"].max() - packet_df["Length"].min())
 
     return nids.PacketDataset(packet_df, label_df)
 
