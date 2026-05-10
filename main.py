@@ -67,7 +67,7 @@ def packet_handler(pkt: scapy.packet.Packet):
     packet_df["arp_request_rate"] = captured_packets_df["arp_request_rate"]
     packet_df["tcp_rate"] = captured_packets_df["tcp_rate"]
 
-    print(captured_packets_df)
+    print(packet_df)
 
     X = torch.tensor(packet_df.to_numpy(dtype="float32"), dtype=torch.float32).to(device)
     logits = model(X).to(device)
