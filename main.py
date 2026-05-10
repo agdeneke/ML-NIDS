@@ -71,7 +71,7 @@ def packet_handler(pkt: scapy.packet.Packet):
 
     X = torch.tensor(packet_df.to_numpy(dtype="float32"), dtype=torch.float32).to(device)
     logits = model(X).to(device)
-    softmax_model = torch.nn.Softmax()
+    softmax_model = torch.nn.Softmax(dim=1)
     is_attack = bool(softmax_model(logits).argmax(dim=1))
 
     if is_attack:
