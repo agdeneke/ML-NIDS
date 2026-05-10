@@ -2,7 +2,7 @@ import pandas as pd
 import nids
 import torch
 import sys
-from scapy.layers.inet import IP
+from scapy.layers.inet import IP, TCP
 from scapy.layers.l2 import ARP, Ether
 import scapy.sendrecv
 
@@ -33,6 +33,11 @@ def find_arp_request_rate(packet_df):
 
     return packet_df
 
+def find_tcp_rate(packet_df: pd.DataFrame):
+    tcp_rate = packet_df[packet_df["Protocol_TCP"] == 1].rolling("1.0s", on="Time").count()["Protocol_TCP"].rename("tcp_rate")
+
+    return packet_df.drop(["tcp_rate"], axis="columns", errors="ignore").join(tcp_rate)
+
 def packet_handler(pkt: scapy.packet.Packet):
     global captured_packets_df
 
@@ -49,12 +54,18 @@ def packet_handler(pkt: scapy.packet.Packet):
 
     packet_time = pd.to_datetime(pkt.time, unit="s")
 
-    packet_df = pd.DataFrame([[packet_time, source_mac, len(pkt), int(pkt.haslayer(ARP))]], columns=["Time", "Source", "Length", "Protocol_ARP"])
+    packet_df = pd.DataFrame([[packet_time,
+                               source_mac,
+                               len(pkt),
+                               int(pkt.haslayer(ARP)),
+                               int(pkt.haslayer(TCP))]], columns=["Time", "Source", "Length", "Protocol_ARP", "Protocol_TCP"])
     captured_packets_df = pd.concat([captured_packets_df, packet_df], ignore_index=True)
 
     captured_packets_df = find_arp_request_rate(captured_packets_df)
+    captured_packets_df = find_tcp_rate(captured_packets_df)
     packet_df = packet_df.drop(["Source", "Time"], axis="columns").reset_index(drop=True)
     packet_df["arp_request_rate"] = captured_packets_df["arp_request_rate"]
+    packet_df["tcp_rate"] = captured_packets_df["tcp_rate"]
 
     print(captured_packets_df)
 
@@ -73,10 +84,11 @@ def preprocess(packet_df, label_df):
     packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
     packet_df["Time"] = pd.to_datetime(packet_df["Time"], unit="s")
 
-    features_to_drop = ["No.", "Info", "Destination", "Protocol_0xe812", "Protocol_H1", "Protocol_RTCP", "Protocol_RTSP", "Protocol_SSDP", "Protocol_SSLv2", "Protocol_TCP", "Protocol_TLSv1", "Protocol_UDP", "Protocol_DHCPv6", "Protocol_DNS", "Protocol_ICMP", "Protocol_ICMPv6", "Protocol_IGMPv3", "Protocol_LLMNR", "Protocol_MDNS", "Protocol_NBNS", "Protocol_TCP, HiPerConTracer"]
+    features_to_drop = ["No.", "Info", "Destination", "Protocol_0xe812", "Protocol_H1", "Protocol_RTCP", "Protocol_RTSP", "Protocol_SSDP", "Protocol_SSLv2", "Protocol_TLSv1", "Protocol_UDP", "Protocol_DHCPv6", "Protocol_DNS", "Protocol_ICMP", "Protocol_ICMPv6", "Protocol_IGMPv3", "Protocol_LLMNR", "Protocol_MDNS", "Protocol_NBNS", "Protocol_TCP, HiPerConTracer"]
     packet_df = packet_df.drop(features_to_drop, axis="columns")
 
     packet_df = find_arp_request_rate(packet_df)
+    packet_df = find_tcp_rate(packet_df)
     packet_df = packet_df.drop(["Source", "Time"], axis="columns").reset_index(drop=True)
 
     return nids.PacketDataset(packet_df, label_df)
@@ -119,14 +131,14 @@ def test_loop(dataloader, model):
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
-model = nids.NeuralNetwork(input_features=3, output_features=2).to(device)
+model = nids.NeuralNetwork(input_features=5, output_features=2).to(device)
 
 try:
     model.load_state_dict(torch.load('model_weights.pth', weights_only=True, map_location=torch.device(device)))
 except FileNotFoundError:
     print("Model not found.")
 
-captured_packets_df = pd.DataFrame(columns=["Source", "Protocol_ARP", "Length", "arp_request_rate"])
+captured_packets_df = pd.DataFrame(columns=["Source", "Protocol_ARP", "Protocol_TCP", "Length", "arp_request_rate", "tcp_rate"])
 
 if len(sys.argv) > 1:
     if sys.argv[1] not in ["--train", "--test"]:
