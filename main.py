@@ -142,6 +142,9 @@ if len(sys.argv) > 1:
         print("Usage:")
         print("")
         print("main.py <--train/test> <training_or_test_dataset.csv> <training_or_test_labels.csv>")
+        print("")
+        print("--train  Create a model with a CSV training dataset and output a model_weights.pth file.")
+        print("--test   Perform validation on a model and print its accuracy.")
         sys.exit(1)
 
     packet_capture_filename = sys.argv[2]
