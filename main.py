@@ -117,7 +117,7 @@ def test_loop(dataloader, model):
             y = y.detach().to(device)
 
             logits = model(X).to(device)
-            softmax_model = torch.nn.Softmax()
+            softmax_model = torch.nn.Softmax(dim=1)
 
             pred = softmax_model(logits)
 
