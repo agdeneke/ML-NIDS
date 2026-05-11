@@ -10,8 +10,8 @@ def train_loop(dataloader, model, loss_fn, optimizer):
     model.train()
 
     for X, y in dataloader:
-        X = torch.tensor(X, dtype=torch.float32).to(device)
-        y = torch.tensor(y).to(device)
+        X = X.detach().type(dtype=torch.float32).to(device)
+        y = y.detach().to(device)
 
         optimizer.zero_grad()
         pred = model(X).to(device)
@@ -113,8 +113,8 @@ def test_loop(dataloader, model):
 
     with torch.no_grad():
         for X, y in dataloader:
-            X = torch.tensor(X, dtype=torch.float32).to(device)
-            y = torch.tensor(y).to(device)
+            X = X.detach().type(dtype=torch.float32).to(device)
+            y = y.detach().to(device)
 
             logits = model(X).to(device)
             softmax_model = torch.nn.Softmax()
