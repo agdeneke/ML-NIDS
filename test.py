@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import nids
+import model
 import torch
 
 class PacketDatasetTest(unittest.TestCase):
@@ -34,7 +35,7 @@ class NeuralNetworkTest(unittest.TestCase):
         self.number_of_input_features = 7
         self.number_of_output_values = 2
 
-        self.model = nids.NeuralNetwork(self.number_of_input_features, self.number_of_output_values)
+        self.model = model.NeuralNetwork(self.number_of_input_features, self.number_of_output_values)
         self.input_tensor = torch.zeros(self.number_of_samples, self.number_of_input_features)
 
     def test_canary(self):

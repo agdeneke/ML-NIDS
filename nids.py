@@ -1,5 +1,8 @@
 import torch
 import pandas as pd
+from scapy.layers.inet import IP, TCP
+from scapy.layers.l2 import ARP, Ether
+import scapy.sendrecv
 
 class PacketDataset(torch.utils.data.Dataset):
     def __init__(self, packet_df, labels_df):
@@ -13,15 +16,80 @@ class PacketDataset(torch.utils.data.Dataset):
 
         return packet, self.labels.loc[idx, "x"]
 
-class NeuralNetwork(torch.nn.Module):
-    def __init__(self, input_features, output_features):
-        super().__init__()
+class PacketSniffer():
+    def __init__(self, prediction_model, device):
+        self.captured_packets_df = pd.DataFrame(columns=["Source", "Protocol_ARP", "Protocol_TCP", "Length", "arp_request_rate", "tcp_rate"])
+        self.prediction_model = prediction_model
+        self.device = device
 
-        self.linear_relu_stack = torch.nn.Sequential(torch.nn.Linear(input_features, 20),
-                                                     torch.nn.ReLU(),
-                                                     torch.nn.Linear(20, output_features))
+        print(scapy.sendrecv.sniff(prn=self.packet_handler))
 
-    def forward(self, input):
-        logits = self.linear_relu_stack(input)
+    def packet_handler(self, pkt: scapy.packet.Packet):
+        self.prediction_model.eval()
 
-        return logits
+        source_mac = pkt[Ether].src
+        dest_mac = pkt[Ether].dst
+
+        if pkt.haslayer(IP):
+            source_ip = pkt[IP].src
+            dest_ip = pkt[IP].dst
+
+        packet_time = pd.to_datetime(pkt.time, unit="s")
+
+        packet_df = pd.DataFrame([[packet_time,
+                                    source_mac,
+                                    len(pkt),
+                                    int(pkt.haslayer(ARP)),
+                                    int(pkt.haslayer(TCP))]], columns=["Time", "Source", "Length", "Protocol_ARP", "Protocol_TCP"])
+        self.captured_packets_df = pd.concat([self.captured_packets_df, packet_df], ignore_index=True)
+
+        self.captured_packets_df = find_arp_request_rate(self.captured_packets_df)
+        self.captured_packets_df = find_tcp_rate(self.captured_packets_df)
+        packet_df = packet_df.drop(["Source", "Time"], axis="columns").reset_index(drop=True)
+        packet_df["arp_request_rate"] = self.captured_packets_df["arp_request_rate"]
+        packet_df["tcp_rate"] = self.captured_packets_df["tcp_rate"]
+
+        X = torch.tensor(packet_df.to_numpy(dtype="float32"), dtype=torch.float32).to(self.device)
+        logits = self.prediction_model(X).to(self.device)
+        softmax_model = torch.nn.Softmax(dim=1)
+        is_attack = bool(softmax_model(logits).argmax(dim=1))
+
+        if is_attack:
+            print("Attack detected!")
+            print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
+            print(f"Source IP: {source_ip} Destination IP: {dest_ip} Length: {len(pkt)}")
+
+def find_arp_request_rate(packet_df):
+    source_arp_request_rates = []
+    for source, group in packet_df[packet_df["Protocol_ARP"] == 1].groupby(["Source"]):
+        arp_request_rate = group.rolling("1.0s", on="Time").count()["Source"].rename("arp_request_rate")
+        source_arp_request_rates.append(arp_request_rate)
+
+    if (len(source_arp_request_rates) > 0):
+        packet_df = packet_df.drop(["arp_request_rate"], axis="columns", errors="ignore")
+        source_arp_request_rate_column = pd.concat(source_arp_request_rates)
+        packet_df = packet_df.join(source_arp_request_rate_column)
+
+    return packet_df
+
+def find_tcp_rate(packet_df: pd.DataFrame):
+    tcp_rate = packet_df[packet_df["Protocol_TCP"] == 1].rolling("1.0s", on="Time").count()["Protocol_TCP"].rename("tcp_rate")
+
+    return packet_df.drop(["tcp_rate"], axis="columns", errors="ignore").join(tcp_rate)
+
+def preprocess(packet_df, label_df):
+    packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
+    packet_df["Time"] = pd.to_datetime(packet_df["Time"], unit="s")
+
+    features_to_drop = ["No.", "Info", "Destination", "Protocol_0xe812", "Protocol_H1", "Protocol_RTCP", "Protocol_RTSP", "Protocol_SSDP", "Protocol_SSLv2", "Protocol_TLSv1", "Protocol_UDP", "Protocol_DHCPv6", "Protocol_DNS", "Protocol_ICMP", "Protocol_ICMPv6", "Protocol_IGMPv3", "Protocol_LLMNR", "Protocol_MDNS", "Protocol_NBNS", "Protocol_TCP, HiPerConTracer"]
+    packet_df = packet_df.drop(features_to_drop, axis="columns")
+
+    packet_df = find_arp_request_rate(packet_df)
+    packet_df = find_tcp_rate(packet_df)
+    packet_df = packet_df.drop(["Source", "Time"], axis="columns").reset_index(drop=True)
+
+    packet_df = packet_df.fillna(0)
+
+    packet_df["Length"] = (packet_df["Length"] - packet_df["Length"].min()) / (packet_df["Length"].max() - packet_df["Length"].min())
+
+    return PacketDataset(packet_df, label_df)
