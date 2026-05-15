@@ -36,7 +36,8 @@ def main():
         packet_df = pd.read_csv(packet_capture_filename)
         label_df = pd.read_csv(labels_filename)
 
-        packet_dataset = nids.preprocess(packet_df, label_df)
+        packet_df = nids.preprocess(packet_df)
+        packet_dataset = nids.PacketDataset(packet_df, label_df)
 
         if sys.argv[1] == "--train":
             model.ModelTrainer(prediction_model, device).train(packet_dataset)
