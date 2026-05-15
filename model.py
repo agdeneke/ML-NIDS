@@ -57,6 +57,10 @@ class ModelTester():
 
         size = len(dataloader.dataset)
         correct = 0
+        true_positives = 0
+        true_negatives = 0
+        false_positives = 0
+        false_negatives = 0
 
         with torch.no_grad():
             for X, y in dataloader:
@@ -66,8 +70,20 @@ class ModelTester():
                 logits = self.model(X).to(self.device)
                 softmax_model = torch.nn.Softmax(dim=1)
 
-                pred = softmax_model(logits)
+                pred = softmax_model(logits).argmax(dim=1)
 
-                correct += (pred.argmax(dim=1) == y).sum().item()
+                true_positives += ((pred == 1) & (y == 1)).sum().item()
+                true_negatives += ((pred == 0) & (y == 0)).sum().item()
+                false_positives += ((pred == 1) & (y == 0)).sum().item()
+                false_negatives += ((pred == 0) & (y == 1)).sum().item()
+                correct += (pred == y).sum().item()
+
+        labeled_positives = true_positives + false_negatives
+        labeled_negatives = true_negatives + false_positives
+
+        sensitivity = true_positives / labeled_positives if labeled_positives != 0 else 0
+        specificity = true_negatives / labeled_negatives if labeled_negatives != 0 else 0
 
         print(f"Accuracy: {(correct / size) * 100}%")
+        print(f"Sensitivity: {sensitivity * 100}%")
+        print(f"Specificity: {specificity * 100}")
