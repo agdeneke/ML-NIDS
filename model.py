@@ -37,7 +37,8 @@ class ModelTrainer():
         training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64)
         validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True)
 
-        loss_fn = torch.nn.CrossEntropyLoss()
+        weights = torch.tensor([0.1, 0.9]).to(self.device)
+        loss_fn = torch.nn.CrossEntropyLoss(weight=weights)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=1e-4)
 
         epoch = 1
