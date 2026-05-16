@@ -19,7 +19,7 @@ class PacketDataset(torch.utils.data.Dataset):
 
 class PacketSniffer():
     def __init__(self, prediction_model, device):
-        self.captured_packets_df = pd.DataFrame(columns=["Source", "Protocol_ARP", "Protocol_TCP", "Length", "arp_request_rate", "tcp_rate"])
+        self.captured_packets_df = pd.DataFrame(columns=["Source", "Length", "Protocol_ARP", "Protocol_TCP", "arp_request_rate", "tcp_rate"])
         self.prediction_model = prediction_model
         self.device = device
 
@@ -42,13 +42,14 @@ class PacketSniffer():
                                     len(pkt),
                                     int(pkt.haslayer(ARP)),
                                     int(pkt.haslayer(TCP))]], columns=["Time", "Source", "Length", "Protocol_ARP", "Protocol_TCP"])
-        packet_df = preprocess(packet_df)
         self.captured_packets_df = pd.concat([self.captured_packets_df, packet_df], ignore_index=True)
+        preprocessed_captured_packets_df = preprocess(self.captured_packets_df)
+        packet_df = preprocessed_captured_packets_df.iloc[-1]
 
         X = torch.tensor(packet_df.to_numpy(dtype="float32"), dtype=torch.float32).to(self.device)
         logits = self.prediction_model(X).to(self.device)
-        softmax_model = torch.nn.Softmax(dim=1)
-        is_attack = bool(softmax_model(logits).argmax(dim=1))
+        softmax_model = torch.nn.Softmax(dim=0)
+        is_attack = bool(softmax_model(logits).argmax())
 
         if is_attack:
             print("Attack detected!")
