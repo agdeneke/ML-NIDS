@@ -1,7 +1,8 @@
 import torch
+import nids
 
 class NeuralNetwork(torch.nn.Module):
-    def __init__(self, input_features, output_features):
+    def __init__(self, input_features: int, output_features: int):
         super().__init__()
 
         self.linear_relu_stack = torch.nn.Sequential(torch.nn.Linear(input_features, 20),
@@ -14,11 +15,11 @@ class NeuralNetwork(torch.nn.Module):
         return logits
 
 class ModelTrainer():
-    def __init__(self, model, device):
+    def __init__(self, model: NeuralNetwork, device: str):
         self.model = model
         self.device = device
 
-    def train_loop(self, dataloader, loss_fn, optimizer):
+    def train_loop(self, dataloader: torch.utils.data.DataLoader, loss_fn: torch.nn.modules.loss._WeightedLoss, optimizer: torch.optim.Optimizer):
         self.model.train()
 
         for X, y in dataloader:
@@ -32,7 +33,7 @@ class ModelTrainer():
             loss.backward()
             optimizer.step()
 
-    def train(self, packet_dataset):
+    def train(self, packet_dataset: nids.PacketDataset):
         training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
         training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
         validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True, num_workers=3, pin_memory=True)
@@ -57,7 +58,7 @@ class ModelTrainer():
         torch.save(self.model.state_dict(), 'model_weights.pth')
 
 class ModelTester():
-    def __init__(self, model, device):
+    def __init__(self, model: NeuralNetwork, device: str):
         self.model = model
         self.device = device
 

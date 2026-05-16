@@ -4,6 +4,7 @@ import numpy as np
 from scapy.layers.inet import IP, TCP
 from scapy.layers.l2 import ARP, Ether
 import scapy.sendrecv
+import model
 
 class PacketDataset(torch.utils.data.Dataset):
     def __init__(self, packet_df, labels_df):
@@ -18,7 +19,7 @@ class PacketDataset(torch.utils.data.Dataset):
         return packet, self.labels.loc[idx, "x"]
 
 class PacketSniffer():
-    def __init__(self, prediction_model, device, capture_file=None):
+    def __init__(self, prediction_model: model.NeuralNetwork, device: str, capture_file: str | None = None):
         self.captured_packets_df = pd.DataFrame(columns=["Source", "Length", "Protocol_ARP", "Protocol_TCP", "arp_request_rate", "tcp_rate"])
         self.prediction_model = prediction_model
         self.device = device
@@ -56,7 +57,7 @@ class PacketSniffer():
             print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
             print(f"Source IP: {source_ip} Destination IP: {dest_ip} Length: {len(pkt)}")
 
-def find_arp_request_rate(packet_df):
+def find_arp_request_rate(packet_df: pd.DataFrame):
     source_arp_request_rate_column = pd.Series().rename("arp_request_rate")
     for source, group in packet_df[packet_df["Protocol_ARP"] == 1].groupby(["Source"]):
         arp_request_rate = group.rolling("1.0s", on="Time").count()["Source"].rename("arp_request_rate")
@@ -72,7 +73,7 @@ def find_tcp_rate(packet_df: pd.DataFrame):
 
     return packet_df.drop(["tcp_rate"], axis="columns", errors="ignore").join(tcp_rate)
 
-def preprocess(packet_df):
+def preprocess(packet_df: pd.DataFrame):
     if "Protocol" in packet_df.columns:
         packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
     packet_df = packet_df.sort_values("Time")
