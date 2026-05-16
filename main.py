@@ -42,7 +42,7 @@ def main():
         if sys.argv[1] == "--train":
             model.ModelTrainer(prediction_model, device).train(packet_dataset)
         elif sys.argv[1] == "--test":
-            test_dataloader = torch.utils.data.DataLoader(packet_dataset, batch_size=64)
+            test_dataloader = torch.utils.data.DataLoader(packet_dataset, batch_size=64, num_workers=3)
             model.ModelTester(prediction_model, device).test_loop(test_dataloader)
 
     else:

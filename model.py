@@ -35,7 +35,7 @@ class ModelTrainer():
     def train(self, packet_dataset):
         training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
         training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3)
-        validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True)
+        validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True, num_workers=3)
 
         label_counts = packet_dataset.labels["x"].value_counts()
         total = len(packet_dataset.labels)
