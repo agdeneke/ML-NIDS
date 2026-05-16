@@ -74,9 +74,11 @@ def find_tcp_rate(packet_df: pd.DataFrame):
 def preprocess(packet_df):
     if "Protocol" in packet_df.columns:
         packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
+    packet_df = packet_df.sort_values("Time")
     packet_df["Time"] = pd.to_datetime(packet_df["Time"], unit="s")
 
-    features_to_drop = ["No.", "Info", "Destination", "Protocol_0xe812", "Protocol_H1", "Protocol_RTCP", "Protocol_RTSP", "Protocol_SSDP", "Protocol_SSLv2", "Protocol_TLSv1", "Protocol_UDP", "Protocol_DHCPv6", "Protocol_DNS", "Protocol_ICMP", "Protocol_ICMPv6", "Protocol_IGMPv3", "Protocol_LLMNR", "Protocol_MDNS", "Protocol_NBNS", "Protocol_TCP, HiPerConTracer"]
+    features_to_keep = ["Source", "Time", "Length", "Protocol_ARP", "Protocol_TCP"]
+    features_to_drop = [col for col in packet_df.columns if col not in features_to_keep]
     packet_df = packet_df.drop(features_to_drop, axis="columns", errors="ignore")
 
     packet_df = find_arp_request_rate(packet_df)

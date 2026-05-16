@@ -33,15 +33,23 @@ class ModelTrainer():
             optimizer.step()
 
     def train(self, packet_dataset):
-        training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.5, 0.5])
-        training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64)
+        training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
+        training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3)
         validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True)
 
-        weights = torch.tensor([0.1, 0.9]).to(self.device)
+        label_counts = packet_dataset.labels["x"].value_counts()
+        total = len(packet_dataset.labels)
+        weights = torch.tensor([total / label_counts[0], total / label_counts[1]], dtype=torch.float32).to(self.device)
+        print("Total Labels: ", total)
+        print("Normal Labels: ", label_counts[0])
+        print("Attack Labels: ", label_counts[1])
+        print("Normal Weight: ", total / label_counts[0])
+        print("Attack Weight: ", total / label_counts[1])
+
         loss_fn = torch.nn.CrossEntropyLoss(weight=weights)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=1e-4)
 
-        epoch = 1
+        epoch = 10
         for i in range(0, epoch):
             self.train_loop(training_dataloader, loss_fn, optimizer)
             ModelTester(self.model, self.device).test_loop(validation_dataloader)
