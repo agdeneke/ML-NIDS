@@ -18,12 +18,12 @@ class PacketDataset(torch.utils.data.Dataset):
         return packet, self.labels.loc[idx, "x"]
 
 class PacketSniffer():
-    def __init__(self, prediction_model, device):
+    def __init__(self, prediction_model, device, capture_file=None):
         self.captured_packets_df = pd.DataFrame(columns=["Source", "Length", "Protocol_ARP", "Protocol_TCP", "arp_request_rate", "tcp_rate"])
         self.prediction_model = prediction_model
         self.device = device
 
-        print(scapy.sendrecv.sniff(prn=self.packet_handler))
+        print(scapy.sendrecv.sniff(prn=self.packet_handler, offline=capture_file))
 
     def packet_handler(self, pkt: scapy.packet.Packet):
         self.prediction_model.eval()
@@ -35,7 +35,7 @@ class PacketSniffer():
             source_ip = pkt[IP].src
             dest_ip = pkt[IP].dst
 
-        packet_time = pd.to_datetime(pkt.time, unit="s")
+        packet_time = pd.to_datetime(float(pkt.time), unit="s")
 
         packet_df = pd.DataFrame([[packet_time,
                                     source_mac,
