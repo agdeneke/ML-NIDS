@@ -15,8 +15,9 @@ class NeuralNetwork(torch.nn.Module):
         return logits
 
 class ModelTrainer():
-    def __init__(self, model: NeuralNetwork, device: str):
+    def __init__(self, model: NeuralNetwork, device: str, model_file: str):
         self.model = model
+        self.model_file = model_file
         self.device = device
 
     def train_loop(self, dataloader: torch.utils.data.DataLoader, loss_fn: torch.nn.modules.loss._WeightedLoss, optimizer: torch.optim.Optimizer):
@@ -55,7 +56,7 @@ class ModelTrainer():
             self.train_loop(training_dataloader, loss_fn, optimizer)
             ModelTester(self.model, self.device).test_loop(validation_dataloader)
 
-        torch.save(self.model.state_dict(), 'model_weights.pth')
+        torch.save(self.model.state_dict(), self.model_file)
 
 class ModelTester():
     def __init__(self, model: NeuralNetwork, device: str):

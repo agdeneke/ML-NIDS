@@ -10,6 +10,7 @@ def main():
     parser.add_argument("--train", help="Create a model with a CSV training dataset and CSV training labels and output a model_weights.pth file.", nargs=2, metavar=("dataset.csv", "labels.csv"))
     parser.add_argument("--test", help="Perform validation on a model with a CSV validation dataset and CSV validation labels, then print its accuracy.", nargs=2, metavar=("dataset.csv", "labels.csv"))
     parser.add_argument("--capture-file", help="Packet capture file containing network traffic to analyze.", metavar="capture.pcap")
+    parser.add_argument("--model-file", help="File where model is located in.", default="model_weights.pth", metavar="model_weights.pth")
 
     args = parser.parse_args()
 
@@ -21,10 +22,10 @@ def main():
     prediction_model = model.NeuralNetwork(input_features=5, output_features=2).to(device)
 
     try:
-        prediction_model.load_state_dict(torch.load('model_weights.pth', weights_only=True, map_location=torch.device(device)))
+        prediction_model.load_state_dict(torch.load(args.model_file, weights_only=True, map_location=torch.device(device)))
     except FileNotFoundError:
         if len(sys.argv) == 1 or sys.argv[1] == "--test":
-            print("ERROR: No model found. Place a model_weights.pth file in the current directory or generate a new one with the --train option.")
+            print(f"ERROR: No model found in {args.model_file}. Place a model file in the current directory or generate a new one with the --train option.")
             sys.exit(1)
 
     if args.train and len(args.train) == 2:
@@ -35,7 +36,7 @@ def main():
         training_packet_df = nids.preprocess(training_packet_df)
         training_packet_dataset = nids.PacketDataset(training_packet_df, training_label_df)
 
-        model.ModelTrainer(prediction_model, device).train(training_packet_dataset)
+        model.ModelTrainer(prediction_model, device, args.model_file).train(training_packet_dataset)
 
     if args.test and len(args.test) == 2:
         packet_capture_filename, labels_filename = args.test
