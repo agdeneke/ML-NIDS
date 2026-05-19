@@ -57,7 +57,7 @@ class PacketSniffer():
             print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
             print(f"Source IP: {source_ip} Destination IP: {dest_ip} Length: {len(pkt)}")
 
-def find_arp_request_rate(packet_df: pd.DataFrame):
+def find_arp_request_rate(packet_df: pd.DataFrame) -> pd.DataFrame:
     source_arp_request_rate_column = pd.Series().rename("arp_request_rate")
     for source, group in packet_df[packet_df["Protocol_ARP"] == 1].groupby(["Source"]):
         arp_request_rate = group.rolling("1.0s", on="Time").count()["Source"].rename("arp_request_rate")
@@ -68,12 +68,12 @@ def find_arp_request_rate(packet_df: pd.DataFrame):
 
     return packet_df
 
-def find_tcp_rate(packet_df: pd.DataFrame):
+def find_tcp_rate(packet_df: pd.DataFrame) -> pd.DataFrame:
     tcp_rate = packet_df[packet_df["Protocol_TCP"] == 1].rolling("1.0s", on="Time").count()["Protocol_TCP"].rename("tcp_rate")
 
     return packet_df.drop(["tcp_rate"], axis="columns", errors="ignore").join(tcp_rate)
 
-def preprocess(packet_df: pd.DataFrame):
+def preprocess(packet_df: pd.DataFrame) -> pd.DataFrame:
     if "Protocol" in packet_df.columns:
         packet_df = pd.get_dummies(packet_df, columns=["Protocol"], dtype=float)
     packet_df = packet_df.sort_values("Time")

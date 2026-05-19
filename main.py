@@ -5,6 +5,13 @@ import model
 import torch
 import sys
 
+def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> nids.PacketDataset:
+    packet_df = pd.read_csv(packet_capture_filename)
+    label_df = pd.read_csv(labels_filename)
+
+    packet_df.preprocess(training_packet_df)
+    return nids.PacketDataset(packet_df, label_df)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", help="Create a model with a CSV training dataset and CSV training labels and output a model_weights.pth file.", nargs=2, metavar=("dataset.csv", "labels.csv"))
@@ -24,29 +31,17 @@ def main():
     try:
         prediction_model.load_state_dict(torch.load(args.model_file, weights_only=True, map_location=torch.device(device)))
     except FileNotFoundError:
-        if len(sys.argv) == 1 or sys.argv[1] == "--test":
+        if not args.train:
             print(f"ERROR: No model found in {args.model_file}. Place a model file in the current directory or generate a new one with the --train option.")
             sys.exit(1)
 
-    if args.train and len(args.train) == 2:
-        packet_capture_filename, labels_filename = args.train
-        training_packet_df = pd.read_csv(packet_capture_filename)
-        training_label_df = pd.read_csv(labels_filename)
+    if args.train:
+        dataset = load_packet_dataset(*args.train)
+        model.ModelTrainer(prediction_model, device, args.model_file).train(dataset)
 
-        training_packet_df = nids.preprocess(training_packet_df)
-        training_packet_dataset = nids.PacketDataset(training_packet_df, training_label_df)
-
-        model.ModelTrainer(prediction_model, device, args.model_file).train(training_packet_dataset)
-
-    if args.test and len(args.test) == 2:
-        packet_capture_filename, labels_filename = args.test
-        test_packet_df = pd.read_csv(packet_capture_filename)
-        test_label_df = pd.read_csv(labels_filename)
-
-        test_packet_df = nids.preprocess(test_packet_df)
-        test_packet_dataset = nids.PacketDataset(test_packet_df, test_label_df)
-
-        test_dataloader = torch.utils.data.DataLoader(test_packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
+    if args.test:
+        dataset = load_packet_dataset(*args.test)
+        test_dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=3, pin_memory=True)
         model.ModelTester(prediction_model, device).test_loop(test_dataloader)
 
     if not args.train and not args.test:
