@@ -6,18 +6,6 @@ from scapy.layers.l2 import ARP, Ether
 import scapy.sendrecv
 import model
 
-class PacketDataset(torch.utils.data.Dataset):
-    def __init__(self, packet_df, labels_df):
-        self.packets = packet_df
-        self.labels = labels_df
-    def __len__(self):
-        return len(self.packets)
-    def __getitem__(self, idx):
-        packet = self.packets.iloc[idx].to_numpy(dtype=np.float64)
-        packet.setflags(write=True)
-
-        return packet, self.labels.loc[idx, "x"]
-
 class PacketSniffer():
     def __init__(self, prediction_model: model.NeuralNetwork, device: str, capture_file: str | None = None):
         self.captured_packets_df = pd.DataFrame(columns=["Source", "Length", "Protocol_ARP", "Protocol_TCP", "arp_request_rate", "tcp_rate"])

@@ -6,12 +6,12 @@ import torch
 import sys
 from flask import Flask
 
-def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> nids.PacketDataset:
+def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> model.PacketDataset:
     packet_df = pd.read_csv(packet_capture_filename)
     label_df = pd.read_csv(labels_filename)
 
     packet_df.preprocess(training_packet_df)
-    return nids.PacketDataset(packet_df, label_df)
+    return model.PacketDataset(packet_df, label_df)
 
 def main():
     parser = argparse.ArgumentParser()

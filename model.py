@@ -1,5 +1,4 @@
 import torch
-import nids
 
 class NeuralNetwork(torch.nn.Module):
     def __init__(self, input_features: int, output_features: int):
@@ -13,6 +12,18 @@ class NeuralNetwork(torch.nn.Module):
         logits = self.linear_relu_stack(input)
 
         return logits
+
+class PacketDataset(torch.utils.data.Dataset):
+    def __init__(self, packet_df, labels_df):
+        self.packets = packet_df
+        self.labels = labels_df
+    def __len__(self):
+        return len(self.packets)
+    def __getitem__(self, idx):
+        packet = self.packets.iloc[idx].to_numpy(dtype=np.float64)
+        packet.setflags(write=True)
+
+        return packet, self.labels.loc[idx, "x"]
 
 class ModelTrainer():
     def __init__(self, model: NeuralNetwork, device: str, model_file: str):
@@ -34,7 +45,7 @@ class ModelTrainer():
             loss.backward()
             optimizer.step()
 
-    def train(self, packet_dataset: nids.PacketDataset):
+    def train(self, packet_dataset: PacketDataset):
         training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
         training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
         validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True, num_workers=3, pin_memory=True)
