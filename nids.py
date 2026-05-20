@@ -23,8 +23,9 @@ class PacketSniffer():
         self.captured_packets_df = pd.DataFrame(columns=["Source", "Length", "Protocol_ARP", "Protocol_TCP", "arp_request_rate", "tcp_rate"])
         self.prediction_model = prediction_model
         self.device = device
+        self.sniffer = scapy.sendrecv.AsyncSniffer(prn=self.packet_handler, offline=capture_file)
 
-        print(scapy.sendrecv.sniff(prn=self.packet_handler, offline=capture_file))
+        print(self.sniffer.start())
 
     def packet_handler(self, pkt: scapy.packet.Packet):
         self.prediction_model.eval()
