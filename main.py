@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--train", help="Create a model with a CSV training dataset and CSV training labels and output a model_weights.pth file.", nargs=2, metavar=("dataset.csv", "labels.csv"))
     parser.add_argument("--test", help="Perform validation on a model with a CSV validation dataset and CSV validation labels, then print its accuracy.", nargs=2, metavar=("dataset.csv", "labels.csv"))
     parser.add_argument("--capture-file", help="Packet capture file containing network traffic to analyze.", metavar="capture.pcap")
+    parser.add_argument("--host", help="IP address to host a web interface for managing alerts.", default="127.0.0.1", metavar="127.0.0.1")
+    parser.add_argument("--port", help="Port to host a web interface for managing alerts.", default="5000", metavar="5000")
     parser.add_argument("--model-file", help="File where model is located in.", default="model_weights.pth", metavar="model_weights.pth")
 
     args = parser.parse_args()
@@ -54,7 +56,7 @@ def main():
         def hello_world():
             return packet_sniffer.captured_packets_df.to_json()
 
-        app.run()
+        app.run(host=args.host, port=args.port)
 
 if __name__ == "__main__":
     main()
