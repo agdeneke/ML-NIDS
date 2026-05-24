@@ -7,11 +7,11 @@ import sys
 from flask import Flask
 
 def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> model.PacketDataset:
-    packet_df = pd.read_csv(packet_capture_filename)
-    label_df = pd.read_csv(labels_filename)
+    packets_df = pd.read_csv(packet_capture_filename)
+    labels_df = pd.read_csv(labels_filename)
 
-    packet_df.preprocess(training_packet_df)
-    return model.PacketDataset(packet_df, label_df)
+    packets_df = nids.preprocess(packets_df)
+    return model.PacketDataset(packets_df, labels_df)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -44,8 +44,7 @@ def main():
 
     if args.test:
         dataset = load_packet_dataset(*args.test)
-        test_dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=3, pin_memory=True)
-        model.ModelTester(prediction_model, device).test_loop(test_dataloader)
+        model.ModelTester(prediction_model, device).test(dataset)
 
     if not args.train and not args.test:
         packet_sniffer = nids.PacketSniffer(prediction_model, device, args.capture_file)

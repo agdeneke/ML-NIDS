@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 class NeuralNetwork(torch.nn.Module):
     def __init__(self, input_features: int, output_features: int):
@@ -74,10 +75,12 @@ class ModelTester():
         self.model = model
         self.device = device
 
-    def test_loop(self, dataloader):
+    def test(self, packet_dataset: PacketDataset):
         self.model.eval()
 
-        size = len(dataloader.dataset)
+        test_dataloader = torch.utils.data.DataLoader(packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
+
+        size = len(test_dataloader.dataset)
         correct = 0
         true_positives = 0
         true_negatives = 0
@@ -85,7 +88,7 @@ class ModelTester():
         false_negatives = 0
 
         with torch.no_grad():
-            for X, y in dataloader:
+            for X, y in test_dataloader:
                 X = X.detach().type(dtype=torch.float32).to(self.device)
                 y = y.detach().to(self.device)
 

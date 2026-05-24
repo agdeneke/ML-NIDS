@@ -1,6 +1,5 @@
 import torch
 import pandas as pd
-import numpy as np
 from scapy.layers.inet import IP, TCP
 from scapy.layers.l2 import ARP, Ether
 import scapy.sendrecv
@@ -13,7 +12,7 @@ class PacketSniffer():
         self.device = device
         self.sniffer = scapy.sendrecv.AsyncSniffer(prn=self.packet_handler, offline=capture_file)
 
-        print(self.sniffer.start())
+        self.sniffer.start()
 
     def packet_handler(self, pkt: scapy.packet.Packet):
         self.prediction_model.eval()
