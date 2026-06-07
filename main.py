@@ -24,7 +24,9 @@ def main():
 
     args = parser.parse_args()
 
-    parser.print_help()
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
     print(f"Using {device} device")
