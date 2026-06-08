@@ -4,7 +4,7 @@ import nids
 import model
 import torch
 import sys
-from flask import Flask
+from app import create_app
 
 def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> model.PacketDataset:
     packets_df = pd.read_csv(packet_capture_filename)
@@ -51,13 +51,7 @@ def main():
     if not args.train and not args.test:
         packet_sniffer = nids.PacketSniffer(prediction_model, device, args.capture_file)
 
-        app = Flask(__name__)
-
-        @app.route("/api/attacks")
-        def attack_packets():
-            captured_packets_df = packet_sniffer.captured_packets_df
-
-            return captured_packets_df[captured_packets_df["is_attack"] == 1].to_json()
+        app = create_app(packet_sniffer)
 
         app.run(host=args.host, port=args.port)
 
