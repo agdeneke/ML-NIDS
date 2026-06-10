@@ -1,13 +1,14 @@
 import torch
-import numpy as np
+import pandas as pd
+from config import MODEL_CONFIG
 
 class NeuralNetwork(torch.nn.Module):
     def __init__(self, input_features: int, output_features: int):
         super().__init__()
 
-        self.linear_relu_stack = torch.nn.Sequential(torch.nn.Linear(input_features, 20),
+        self.linear_relu_stack = torch.nn.Sequential(torch.nn.Linear(MODEL_CONFIG["input_features"], MODEL_CONFIG["hidden_dim"]),
                                                      torch.nn.ReLU(),
-                                                     torch.nn.Linear(20, output_features))
+                                                     torch.nn.Linear(MODEL_CONFIG["hidden_dim"], MODEL_CONFIG["output_features"]))
 
     def forward(self, input):
         logits = self.linear_relu_stack(input)
@@ -15,16 +16,13 @@ class NeuralNetwork(torch.nn.Module):
         return logits
 
 class PacketDataset(torch.utils.data.Dataset):
-    def __init__(self, packet_df, labels_df):
-        self.packets = packet_df
-        self.labels = labels_df
+    def __init__(self, packet_df: pd.DataFrame, labels_df: pd.DataFrame):
+        self.packets = torch.tensor(packet_df.values, dtype=torch.float32)
+        self.labels = torch.tensor(labels_df["x"].values, dtype=torch.long)
     def __len__(self):
         return len(self.packets)
     def __getitem__(self, idx):
-        packet = self.packets.iloc[idx].to_numpy(dtype=np.float64)
-        packet.setflags(write=True)
-
-        return packet, self.labels.loc[idx, "x"]
+        return self.packets[idx], self.labels[idx]
 
 class ModelTrainer():
     def __init__(self, model: NeuralNetwork, device: str, model_file: str):
@@ -49,24 +47,26 @@ class ModelTrainer():
     def train(self, packet_dataset: PacketDataset):
         training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
         training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
-        validation_dataloader = torch.utils.data.DataLoader(validation_packet_dataset, batch_size=64, drop_last=True, num_workers=3, pin_memory=True)
 
-        label_counts = packet_dataset.labels["x"].value_counts()
         total = len(packet_dataset.labels)
-        weights = torch.tensor([total / label_counts[0], total / label_counts[1]], dtype=torch.float32).to(self.device)
+        normal_label_count = torch.sum(packet_dataset.labels == 0)
+        attack_label_count = torch.sum(packet_dataset.labels == 1)
+        normal_weight = total / normal_label_count
+        attack_weight = total / attack_label_count
+        weights = torch.tensor([total / normal_label_count, total / attack_label_count], dtype=torch.float32).to(self.device)
+
         print("Total Labels: ", total)
-        print("Normal Labels: ", label_counts[0])
-        print("Attack Labels: ", label_counts[1])
-        print("Normal Weight: ", total / label_counts[0])
-        print("Attack Weight: ", total / label_counts[1])
+        print("Normal Labels: ", torch.sum(packet_dataset.labels == 0))
+        print("Attack Labels: ", torch.sum(packet_dataset.labels == 1))
+        print("Normal Weight: ", total / torch.sum(packet_dataset.labels == 0))
+        print("Attack Weight: ", total / torch.sum(packet_dataset.labels == 1))
 
         loss_fn = torch.nn.CrossEntropyLoss(weight=weights)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=1e-4)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=MODEL_CONFIG["learning_rate"])
 
-        epoch = 10
-        for i in range(0, epoch):
+        for i in range(0, MODEL_CONFIG["epochs"]):
             self.train_loop(training_dataloader, loss_fn, optimizer)
-            ModelTester(self.model, self.device).test_loop(validation_dataloader)
+            ModelTester(self.model, self.device).test(validation_packet_dataset)
 
         torch.save(self.model.state_dict(), self.model_file)
 

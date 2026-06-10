@@ -1,13 +1,12 @@
-import nids
+import sniffer
+import pandas as pd
 from flask import Flask
 
-def create_app(packet_sniffer: nids.PacketSniffer):
+def create_app(packet_sniffer: sniffer.PacketSniffer):
     app = Flask(__name__)
 
     @app.route("/api/attacks")
     def attack_packets():
-        captured_packets_df = packet_sniffer.captured_packets_df
-
-        return captured_packets_df[captured_packets_df["is_attack"] == 1].to_json()
+        return pd.DataFrame(packet_sniffer.captured_packets).to_json()
 
     return app

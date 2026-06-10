@@ -1,16 +1,19 @@
 import argparse
 import pandas as pd
-import nids
+import sniffer
+import features
 import model
 import torch
 import sys
 from app import create_app
+from config import MODEL_CONFIG
 
 def load_packet_dataset(packet_capture_filename: str, labels_filename: str) -> model.PacketDataset:
     packets_df = pd.read_csv(packet_capture_filename)
     labels_df = pd.read_csv(labels_filename)
 
-    packets_df = nids.preprocess(packets_df)
+    packets_df = features.preprocess(packets_df)
+    print(packets_df)
     return model.PacketDataset(packets_df, labels_df)
 
 def main():
@@ -31,7 +34,8 @@ def main():
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
     print(f"Using {device} device")
 
-    prediction_model = model.NeuralNetwork(input_features=5, output_features=2).to(device)
+    prediction_model = model.NeuralNetwork(input_features=MODEL_CONFIG["input_features"],
+                                           output_features=MODEL_CONFIG["output_features"]).to(device)
 
     try:
         prediction_model.load_state_dict(torch.load(args.model_file, weights_only=True, map_location=torch.device(device)))
@@ -49,7 +53,7 @@ def main():
         model.ModelTester(prediction_model, device).test(dataset)
 
     if not args.train and not args.test:
-        packet_sniffer = nids.PacketSniffer(prediction_model, device, args.capture_file)
+        packet_sniffer = sniffer.PacketSniffer(prediction_model, device, args.capture_file)
 
         app = create_app(packet_sniffer)
 
