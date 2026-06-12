@@ -5,8 +5,10 @@ import torch
 import features
 import model
 
+
 class PacketSniffer:
-    def __init__(self, prediction_model: model.NeuralNetwork, device: str, capture_file: str | None = None):
+    def __init__(self, prediction_model: model.NeuralNetwork, device: str,
+                 capture_file: str | None = None):
         self.captured_packets = []
         self.prediction_model = prediction_model
         self.device = device
@@ -21,7 +23,8 @@ class PacketSniffer:
             source_ip = pkt[IP].src
             dest_ip = pkt[IP].dst
 
-        packet = [pkt.time, source_mac, len(pkt) / 1500, int(pkt.haslayer(ARP)), int(pkt.haslayer(TCP))]
+        packet = [pkt.time, source_mac, len(pkt) / 1500,
+                  int(pkt.haslayer(ARP)), int(pkt.haslayer(TCP))]
         self.captured_packets.append(packet)
 
         packet.append(features.find_arp_request_rate(source_mac, self.captured_packets))

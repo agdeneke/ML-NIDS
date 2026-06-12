@@ -2,6 +2,7 @@ import sniffer
 import pandas as pd
 from flask import Flask
 
+
 def create_app(packet_sniffer: sniffer.PacketSniffer):
     app = Flask(__name__)
 

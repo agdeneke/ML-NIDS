@@ -2,6 +2,7 @@ import torch
 import pandas as pd
 from config import MODEL_CONFIG
 
+
 class NeuralNetwork(torch.nn.Module):
     def __init__(self, input_features: int, output_features: int):
         super().__init__()
@@ -15,14 +16,18 @@ class NeuralNetwork(torch.nn.Module):
 
         return logits
 
+
 class PacketDataset(torch.utils.data.Dataset):
     def __init__(self, packet_df: pd.DataFrame, labels_df: pd.DataFrame):
         self.packets = torch.tensor(packet_df.values, dtype=torch.float32)
         self.labels = torch.tensor(labels_df["x"].values, dtype=torch.long)
+
     def __len__(self):
         return len(self.packets)
+
     def __getitem__(self, idx):
         return self.packets[idx], self.labels[idx]
+
 
 class ModelTrainer():
     def __init__(self, model: NeuralNetwork, device: str, model_file: str):
@@ -30,7 +35,9 @@ class ModelTrainer():
         self.model_file = model_file
         self.device = device
 
-    def train_loop(self, dataloader: torch.utils.data.DataLoader, loss_fn: torch.nn.modules.loss._WeightedLoss, optimizer: torch.optim.Optimizer):
+    def train_loop(self, dataloader: torch.utils.data.DataLoader,
+                   loss_fn: torch.nn.modules.loss._WeightedLoss,
+                   optimizer: torch.optim.Optimizer):
         self.model.train()
 
         for X, y in dataloader:
@@ -45,15 +52,18 @@ class ModelTrainer():
             optimizer.step()
 
     def train(self, packet_dataset: PacketDataset):
-        training_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
-        training_dataloader = torch.utils.data.DataLoader(training_packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
+        train_packet_dataset, validation_packet_dataset = torch.utils.data.random_split(packet_dataset, [0.9, 0.1])
+        training_dataloader = torch.utils.data.DataLoader(train_packet_dataset,
+                                                          batch_size=64,
+                                                          num_workers=3,
+                                                          pin_memory=True)
 
         total = len(packet_dataset.labels)
         normal_label_count = torch.sum(packet_dataset.labels == 0)
         attack_label_count = torch.sum(packet_dataset.labels == 1)
         normal_weight = total / normal_label_count
         attack_weight = total / attack_label_count
-        weights = torch.tensor([total / normal_label_count, total / attack_label_count], dtype=torch.float32).to(self.device)
+        weights = torch.tensor([normal_weight, attack_weight], dtype=torch.float32).to(self.device)
 
         print("Total Labels: ", total)
         print("Normal Labels: ", torch.sum(packet_dataset.labels == 0))
@@ -62,13 +72,16 @@ class ModelTrainer():
         print("Attack Weight: ", total / torch.sum(packet_dataset.labels == 1))
 
         loss_fn = torch.nn.CrossEntropyLoss(weight=weights)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=MODEL_CONFIG["learning_rate"])
+        optimizer = torch.optim.SGD(self.model.parameters(),
+                                    lr=MODEL_CONFIG["learning_rate"])
 
+        model_tester = ModelTester(self.model, self.device)
         for i in range(0, MODEL_CONFIG["epochs"]):
             self.train_loop(training_dataloader, loss_fn, optimizer)
-            ModelTester(self.model, self.device).test(validation_packet_dataset)
+            model_tester.test(validation_packet_dataset)
 
         torch.save(self.model.state_dict(), self.model_file)
+
 
 class ModelTester():
     def __init__(self, model: NeuralNetwork, device: str):
@@ -78,7 +91,10 @@ class ModelTester():
     def test(self, packet_dataset: PacketDataset):
         self.model.eval()
 
-        test_dataloader = torch.utils.data.DataLoader(packet_dataset, batch_size=64, num_workers=3, pin_memory=True)
+        test_dataloader = torch.utils.data.DataLoader(packet_dataset,
+                                                      batch_size=64,
+                                                      num_workers=3,
+                                                      pin_memory=True)
 
         size = len(test_dataloader.dataset)
         correct = 0
