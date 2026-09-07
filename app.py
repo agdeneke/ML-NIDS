@@ -10,6 +10,8 @@ def create_app(packet_sniffer: sniffer.PacketSniffer):
 
     @app.route("/api/attacks")
     def attack_packets():
-        return pd.DataFrame(packet_sniffer.captured_packets).to_json()
+        captured_packets_df = pd.DataFrame(packet_sniffer.captured_packets, columns=["Time", "Source", "Length", "Is ARP", "Is TCP", "ARP request rate", "TCP rate", "Is attack"])
+
+        return captured_packets_df[captured_packets_df["Is attack"] == 1].to_json(orient="records")
 
     return app

@@ -37,6 +37,8 @@ class PacketSniffer:
         softmax_model = torch.nn.Softmax(dim=0)
         is_attack = bool(softmax_model(logits).argmax())
 
+        packet.append(is_attack)
+
         if is_attack:
             print("Attack detected!")
             print(f"Source MAC: {source_mac} Destination MAC: {dest_mac}")
