@@ -4,20 +4,27 @@ import scapy.sendrecv
 import torch
 import features
 import model
+import threading
 
 
 class PacketSniffer:
     def __init__(self, prediction_model: model.NeuralNetwork, device: str,
                  capture_file: str | None = None):
         self.captured_packets = []
+        self.lock = threading.Lock()
         self.prediction_model = prediction_model
         self.device = device
 
         scapy.sendrecv.AsyncSniffer(prn=self.packet_handler, offline=capture_file).start()
 
+    def snapshot(self) -> list:
+        with self.lock:
+            return list(self.captured_packets)
+
     def packet_handler(self, pkt: scapy.packet.Packet):
         source_mac = pkt[Ether].src
         dest_mac = pkt[Ether].dst
+        source_ip = dest_ip = None
 
         if pkt.haslayer(IP):
             source_ip = pkt[IP].src
@@ -25,10 +32,10 @@ class PacketSniffer:
 
         packet = [pkt.time, source_mac, len(pkt) / 1500,
                   int(pkt.haslayer(ARP)), int(pkt.haslayer(TCP))]
-        self.captured_packets.append(packet)
 
-        packet.append(features.find_arp_request_rate(source_mac, self.captured_packets))
-        packet.append(features.find_tcp_request_rate(self.captured_packets))
+        window = self.captured_packets + [packet]
+        packet.append(features.find_arp_request_rate(source_mac, window))
+        packet.append(features.find_tcp_request_rate(window))
 
         input_packet = packet[2:7]
 
@@ -38,6 +45,9 @@ class PacketSniffer:
         is_attack = bool(softmax_model(logits).argmax())
 
         packet.append(is_attack)
+
+        with self.lock:
+            self.captured_packets.append(packet)
 
         if is_attack:
             print("Attack detected!")
