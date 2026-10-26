@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-import nids
+import features
 import model
 import torch
 
@@ -28,7 +28,7 @@ class PacketDatasetTest(unittest.TestCase):
 class NeuralNetworkTest(unittest.TestCase):
     def setUp(self):
         self.number_of_samples = 128
-        self.number_of_input_features = 7
+        self.number_of_input_features = 5
         self.number_of_output_values = 2
 
         self.model = model.NeuralNetwork(self.number_of_input_features, self.number_of_output_values)
@@ -47,18 +47,18 @@ class NeuralNetworkTest(unittest.TestCase):
 
 class FeatureCreationTest(unittest.TestCase):
     def setUp(self):
-        self.packet_df = pd.DataFrame([[pd.to_datetime(0), "192.168.1.254", 1.0, 1.0]],
-                                      columns=["Time", "Source", "Protocol_ARP", "Protocol_TCP"])
+        self.packets = [[0.0, "192.168.1.254", 50, 1.0, 1.0],
+                        [0.5, "192.168.1.254", 50, 1.0, 1.0]]
 
     def test_find_arp_request_rate(self):
-        packet_df_with_arp_request_rate = nids.find_arp_request_rate(self.packet_df)
+        arp_request_rate = features.find_arp_request_rate("192.168.1.254", self.packets)
 
-        self.assertEqual(packet_df_with_arp_request_rate["arp_request_rate"][0], 1)
+        self.assertEqual(arp_request_rate, 1)
 
     def test_find_tcp_rate(self):
-        packet_df_with_tcp_rate = nids.find_tcp_rate(self.packet_df)
+        tcp_rate = features.find_tcp_request_rate(self.packets)
 
-        self.assertEqual(packet_df_with_tcp_rate["tcp_rate"][0], 1)
+        self.assertEqual(tcp_rate, 1)
 
 
 if __name__ == '__main__':
